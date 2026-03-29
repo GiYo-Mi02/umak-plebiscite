@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { isAllowedEmail, isAdminEmail } from '@/lib/AuthContext';
 
 /**
- * Handles the magic link redirect from Supabase.
- * The magic link URL includes a hash fragment with the access token.
- * The Supabase client automatically picks this up and establishes a session.
+ * Handles the OAuth redirect from Supabase (Google sign-in).
+ * The Supabase client automatically picks up the session from the URL.
+ * We then validate the user's email and route them accordingly.
  */
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -15,8 +14,6 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // The Supabase client automatically reads the hash fragment
-        // and exchanges it for a session when we call getSession()
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
@@ -32,16 +29,32 @@ export default function AuthCallback() {
           return;
         }
 
-        // Re-validate email domain
-        if (!isAllowedEmail(session.user.email)) {
+        // Validate email via database function (checks @umak.edu.ph OR admin_emails table)
+        const { data: isAllowed, error: allowedError } = await supabase.rpc('is_allowed_email', {
+          p_email: session.user.email,
+        });
+
+        if (allowedError) {
+          console.error('Email validation error:', allowedError);
+          // If the function doesn't exist yet, fall back to domain check
+          const isUmak = session.user.email.toLowerCase().endsWith('@umak.edu.ph');
+          if (!isUmak) {
+            await supabase.auth.signOut();
+            setError('Only @umak.edu.ph email addresses or authorized accounts are permitted.');
+            setTimeout(() => navigate('/auth/login', { replace: true }), 2000);
+            return;
+          }
+        } else if (!isAllowed) {
           await supabase.auth.signOut();
-          setError('Only @umak.edu.ph email addresses or authorized admin accounts are permitted.');
+          setError('Only @umak.edu.ph email addresses or authorized accounts are permitted.');
           setTimeout(() => navigate('/auth/login', { replace: true }), 2000);
           return;
         }
 
-        // Route based on role (JWT metadata OR whitelisted admin email)
-        const admin = session.user.user_metadata?.role === 'admin' || isAdminEmail(session.user.email);
+        // Check admin status via database
+        const { data: isAdmin } = await supabase.rpc('check_is_admin');
+        const admin = session.user.user_metadata?.role === 'admin' || !!isAdmin;
+
         navigate(admin ? '/admin' : '/vote', { replace: true });
       } catch (err) {
         console.error('Unexpected error in auth callback:', err);

@@ -2,15 +2,6 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
-/**
- * Emails that are granted admin access to the dashboard.
- * These users bypass the @umak.edu.ph domain restriction.
- */
-const ADMIN_EMAILS: string[] = [
-  'umak.studentcongress@umak.edu.ph',
-  'ggiojoshua2006@gmail.com',
-];
-
 type AuthState = {
   session: Session | null;
   user: User | null;
@@ -29,13 +20,16 @@ const AuthContext = createContext<AuthState>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Get the initial session
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
-      setLoading(false);
+      if (!s?.user) {
+        setLoading(false);
+      }
     });
 
     // Listen for auth state changes (login, logout, token refresh)
@@ -43,7 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
-      setLoading(false);
+      if (!s?.user) {
+        setIsAdmin(false);
+        setLoading(false);
+      }
     });
 
     return () => {
@@ -51,14 +48,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Check admin status from the database whenever the user changes
+  useEffect(() => {
+    const user = session?.user;
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+
+    // Check JWT metadata first (fast path)
+    if (user.user_metadata?.role === 'admin') {
+      setIsAdmin(true);
+      setLoading(false);
+      return;
+    }
+
+    // Query the database via SECURITY DEFINER function
+    supabase.rpc('check_is_admin').then(({ data, error }) => {
+      if (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(!!data);
+      }
+      setLoading(false);
+    });
+  }, [session?.user?.id]);
+
   const user = session?.user ?? null;
-  const isAdmin =
-    user?.user_metadata?.role === 'admin' ||
-    (user?.email != null && ADMIN_EMAILS.includes(user.email.toLowerCase()));
 
   const signOut = async () => {
     await supabase.auth.signOut();
     setSession(null);
+    setIsAdmin(false);
   };
 
   return (
@@ -74,20 +96,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
-
-/**
- * Check if an email is allowed to log in.
- * Allows @umak.edu.ph students and whitelisted admin emails.
- */
-export function isAllowedEmail(email: string): boolean {
-  const normalized = email.trim().toLowerCase();
-  return normalized.endsWith('@umak.edu.ph') || ADMIN_EMAILS.includes(normalized);
-}
-
-/**
- * Check if an email is a designated admin.
- */
-export function isAdminEmail(email: string): boolean {
-  return ADMIN_EMAILS.includes(email.trim().toLowerCase());
 }
