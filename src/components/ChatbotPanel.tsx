@@ -2,25 +2,80 @@ import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import ReactMarkdown from 'react-markdown';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 // Initialize the Gemini SDK
 // Note: Exposing API keys in the frontend is fine for school prototypes, 
 // but for production, this call should be moved to your Express backend.
 const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+GlobalWorkerOptions.workerSrc = pdfWorker;
+
+const MAX_TOTAL_CONTEXT_CHARS = 120000;
+const MAX_PAGES_PER_DOCUMENT = 120;
 
 type Message = {
   role: 'user' | 'model';
   text: string;
 };
 
-// We pass the articles as context so the AI knows exactly what it's talking about
-export default function ChatBot({ articles }: { articles: any[] }) {
+type ChatBotProps = {
+  pdfSources: {
+    title: string;
+    path: string;
+  }[];
+};
+
+function normalizeText(text: string) {
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+async function readPdfText(title: string, path: string) {
+  const loadingTask = getDocument({ url: path });
+  const pdf = await loadingTask.promise;
+  const pageCount = Math.min(pdf.numPages, MAX_PAGES_PER_DOCUMENT);
+
+  let charsUsed = 0;
+  const pages: string[] = [];
+
+  for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const textContent = await page.getTextContent();
+    const rawPageText = textContent.items
+      .map((item) => ('str' in item ? item.str : ''))
+      .join(' ');
+    const pageText = normalizeText(rawPageText);
+
+    if (!pageText) {
+      continue;
+    }
+
+    const entry = `Page ${pageNumber}: ${pageText}`;
+    charsUsed += entry.length;
+    pages.push(entry);
+
+    if (charsUsed >= MAX_TOTAL_CONTEXT_CHARS / 2) {
+      break;
+    }
+  }
+
+  return [
+    `### DOCUMENT: ${title}`,
+    pages.join('\n'),
+  ].join('\n');
+}
+
+// Context is extracted directly from the actual PDF files shown on Compare.
+export default function ChatBot({ pdfSources }: ChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { role: 'model', text: 'Hi! I am your Constitutional Guide. Ask me anything about the differences between the 1987 Constitution and the proposed Federal Constitution.' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [contextStatus, setContextStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [pdfContext, setPdfContext] = useState('');
+  const [contextError, setContextError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom of chat
@@ -28,25 +83,76 @@ export default function ChatBot({ articles }: { articles: any[] }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadContext = async () => {
+      setContextStatus('loading');
+      setContextError(null);
+
+      try {
+        const chunks = await Promise.all(
+          pdfSources.map((source) => readPdfText(source.title, source.path))
+        );
+
+        const merged = chunks.join('\n\n---\n\n').slice(0, MAX_TOTAL_CONTEXT_CHARS);
+
+        if (!merged.trim()) {
+          throw new Error('No extractable text found in the provided PDF files.');
+        }
+
+        if (!isCancelled) {
+          setPdfContext(merged);
+          setContextStatus('ready');
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          const message = error instanceof Error ? error.message : 'Unable to parse PDF files.';
+          setPdfContext('');
+          setContextError(message);
+          setContextStatus('error');
+        }
+      }
+    };
+
+    loadContext();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [pdfSources]);
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
     const userText = input.trim();
+
+    if (contextStatus === 'loading') {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: userText },
+        { role: 'model', text: 'I am still reading the PDF documents. Please try again in a few seconds.' },
+      ]);
+      setInput('');
+      return;
+    }
+
+    if (contextStatus === 'error') {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: userText },
+        { role: 'model', text: `I could not load the PDF comparison context yet: ${contextError ?? 'unknown error'}` },
+      ]);
+      setInput('');
+      return;
+    }
+
     setInput('');
     setMessages((prev) => [...prev, { role: 'user', text: userText }]);
     setIsLoading(true);
 
     try {
-      // 1. IMPROVED CONTEXT FORMATTING
-      // We format the raw data into a clean, markdown-like structure 
-      // so the AI parses the exact differences more easily.
-      const formattedContext = articles.map(a => 
-        `### ARTICLE: ${a.title}\n` +
-        `**1987 Constitution:**\n${a.old.map(text => `- ${text}`).join('\n')}\n` +
-        `**Proposed Federal Constitution:**\n${a.new.map(text => `- ${text}`).join('\n')}\n`
-      ).join('\n\n---\n\n');
-
-      // 2. IMPROVED SYSTEM PROMPT (The "Brain" and Guardrails)
+      // Prompt includes strict guardrails and an app-provided reference context.
       const systemInstruction = `You are "GovAI", a neutral and highly knowledgeable constitutional tutor for university students. 
 
 YOUR MISSION:
@@ -64,7 +170,7 @@ FORMATTING RULES:
 - Keep your answers concise, structured, and easy for a student to skim.
 
 REFERENCE TEXT:
-${formattedContext}`;
+${pdfContext}`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -100,6 +206,13 @@ ${formattedContext}`;
           </div>
 
           <div className="p-4 h-80 overflow-y-auto flex flex-col gap-3 bg-navy-800/50">
+            {contextStatus !== 'ready' && (
+              <div className="text-xs text-parchment-muted border border-navy-700 rounded-md px-3 py-2 bg-navy-900/60">
+                {contextStatus === 'loading'
+                  ? 'Preparing AI context from the PDF files...'
+                  : `PDF context unavailable: ${contextError}`}
+              </div>
+            )}
             {messages.map((msg, idx) => (
               <div key={idx} className={`max-w-[85%] p-3 rounded-lg text-sm ${
                 msg.role === 'user' 
