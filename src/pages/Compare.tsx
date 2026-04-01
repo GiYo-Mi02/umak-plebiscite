@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import Chatbot from '../components/ChatbotPanel'; 
 
 const articles = [
   {
@@ -168,6 +169,7 @@ export default function Compare() {
           <Link to={user ? '/vote' : '/auth/login'}>Go to Ballot →</Link>
         </Button>
       </div>
+      <Chatbot articles={articles} />
     </div>
   );
 }
