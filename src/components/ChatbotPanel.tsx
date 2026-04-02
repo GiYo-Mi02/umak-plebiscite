@@ -2,15 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import ReactMarkdown from 'react-markdown';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 // Initialize the Gemini SDK
 // Note: Exposing API keys in the frontend is fine for school prototypes, 
 // but for production, this call should be moved to your Express backend.
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-GlobalWorkerOptions.workerSrc = pdfWorker;
-
 const MAX_TOTAL_CONTEXT_CHARS = 120000;
 const MAX_PAGES_PER_DOCUMENT = 120;
 
@@ -30,8 +25,17 @@ function normalizeText(text: string) {
   return text.replace(/\s+/g, ' ').trim();
 }
 
-async function readPdfText(title: string, path: string) {
-  const loadingTask = getDocument({ url: path });
+function getAiClient() {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
+
+  return new GoogleGenAI({ apiKey });
+}
+
+async function readPdfText(getDocumentFn: (params: { url: string }) => any, title: string, path: string) {
+  const loadingTask = getDocumentFn({ url: path });
   const pdf = await loadingTask.promise;
   const pageCount = Math.min(pdf.numPages, MAX_PAGES_PER_DOCUMENT);
 
@@ -42,7 +46,7 @@ async function readPdfText(title: string, path: string) {
     const page = await pdf.getPage(pageNumber);
     const textContent = await page.getTextContent();
     const rawPageText = textContent.items
-      .map((item) => ('str' in item ? item.str : ''))
+      .map((item: { str?: string }) => item.str ?? '')
       .join(' ');
     const pageText = normalizeText(rawPageText);
 
@@ -91,8 +95,15 @@ export default function ChatBot({ pdfSources }: ChatBotProps) {
       setContextError(null);
 
       try {
+        const [{ getDocument, GlobalWorkerOptions }, workerModule] = await Promise.all([
+          import('pdfjs-dist/build/pdf.mjs'),
+          import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+        ]);
+
+        GlobalWorkerOptions.workerSrc = workerModule.default;
+
         const chunks = await Promise.all(
-          pdfSources.map((source) => readPdfText(source.title, source.path))
+          pdfSources.map((source) => readPdfText(getDocument, source.title, source.path))
         );
 
         const merged = chunks.join('\n\n---\n\n').slice(0, MAX_TOTAL_CONTEXT_CHARS);
@@ -152,6 +163,18 @@ export default function ChatBot({ pdfSources }: ChatBotProps) {
     setIsLoading(true);
 
     try {
+      const ai = getAiClient();
+      if (!ai) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'model',
+            text: 'AI is not configured yet. Add VITE_GEMINI_API_KEY in your deployment environment to enable chatbot answers.',
+          },
+        ]);
+        return;
+      }
+
       // Prompt includes strict guardrails and an app-provided reference context.
       const systemInstruction = `You are "GovAI", a neutral and highly knowledgeable constitutional tutor for university students. 
 
