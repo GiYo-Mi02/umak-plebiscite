@@ -1,28 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, ExternalLink, FileSearch } from 'lucide-react';
+import { ExternalLink, Download, FileSearch } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
-import Chatbot from '../components/ChatbotPanel'; 
-
+import Chatbot from '../components/ChatbotPanel';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 type DocKey = 'old' | 'new';
 type DocStatus = 'checking' | 'available' | 'missing';
 
-const pdfDocs: Record<DocKey, { title: string; badge: string; path: string; tone: string; panelTone: string }> = {
+const pdfDocs: Record<DocKey, { title: string; badge: string; path: string }> = {
   old: {
     title: '1987 Constitution',
-    badge: 'Current',
+    badge: 'Reference Edition',
     path: '/docs/2019%20Amended-USC-Constitution-By-Laws.pdf',
-    tone: 'text-slate-muted',
-    panelTone: 'bg-navy-900',
   },
   new: {
-    title: 'New Federal Constitution',
-    badge: 'Proposed',
+    title: 'Proposed Constitution',
+    badge: 'Proposed Revision 2024.01',
     path: '/docs/NewConstitution.pdf',
-    tone: 'text-gold',
-    panelTone: 'bg-gold/5',
   },
 };
 
@@ -31,15 +27,18 @@ const chatbotPdfSources = [
   { title: pdfDocs.new.title, path: pdfDocs.new.path },
 ];
 
+const articles = ['Article I', 'Article II', 'Article III', 'Article IV', 'Article V', 'Article VI', 'Article VII'];
+
 export default function Compare() {
   const [docStatus, setDocStatus] = useState<Record<DocKey, DocStatus>>({
     old: 'checking',
     new: 'checking',
   });
+  const [activeArticle, setActiveArticle] = useState(0);
   const { user } = useAuth();
 
   const loginOrVoteLink = user ? '/vote' : '/auth/login';
-  const loginOrVoteLabel = user ? 'Go to Ballot →' : 'Login to Vote →';
+  const loginOrVoteLabel = user ? 'Go to Ballot' : 'Login to Vote';
 
   useEffect(() => {
     let isCancelled = false;
@@ -69,93 +68,145 @@ export default function Compare() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-navy-900 flex flex-col">
-      {/* Top Navigation */}
-      <nav className="h-16 border-b border-navy-700 flex items-center justify-between px-6 shrink-0 bg-navy-900/90 backdrop-blur z-20">
-        <Link to="/" className="flex items-center gap-2 text-parchment-muted hover:text-gold transition-colors font-mono text-xs uppercase tracking-widest">
-          <ArrowLeft className="w-4 h-4" /> Back to Home
-        </Link>
-        <Link to={loginOrVoteLink} className="text-gold hover:text-gold-light transition-colors font-mono text-xs uppercase tracking-widest">
-          {loginOrVoteLabel}
-        </Link>
-      </nav>
+    <div className="min-h-screen bg-white flex flex-col">
+      <Header />
 
-      <div className="border-b border-navy-700 bg-navy-800 px-6 py-4">
-        <p className="font-mono text-[0.68rem] tracking-[0.2em] uppercase text-parchment-muted">Whole-document PDF comparison</p>
-        <h1 className="font-display text-2xl mt-1">Read the full constitutions side by side</h1>
-        <p className="text-parchment-muted mt-2 max-w-3xl text-sm">
-          This view now compares the complete documents in PDF format. Use each viewer's built-in find, zoom, and page navigation tools.
-        </p>
-      </div>
+      {/* Split View */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-0">
+        {/* Left: 1987 Constitution */}
+        <section className="bg-white flex flex-col border-r border-zinc-100">
+          {/* Document Header */}
+          <div className="border-b border-zinc-200 px-6 py-3 lg:px-8 lg:py-4 sticky top-14 z-30 glass-effect">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-2">
+                  {pdfDocs.old.badge}
+                </p>
+                <h2 className="font-display text-2xl md:text-3xl font-bold text-black">
+                  {pdfDocs.old.title}
+                </h2>
+              </div>
+              <div className="flex gap-2 shrink-0 ml-4">
+                <a
+                  href={pdfDocs.old.path}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-500 hover:text-black hover:border-zinc-400 transition-colors"
+                  title="Open in new tab"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+                <a
+                  href={pdfDocs.old.path}
+                  download
+                  className="w-9 h-9 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-500 hover:text-black hover:border-zinc-400 transition-colors"
+                  title="Download PDF"
+                >
+                  <Download className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+          </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-px bg-navy-700 pb-28 lg:pb-24">
-        {(['old', 'new'] as DocKey[]).map((key) => {
-          const doc = pdfDocs[key];
-          const status = docStatus[key];
-
-          return (
-            <section key={key} className={`${doc.panelTone} p-4 md:p-5`}> 
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <span className={`font-mono text-[0.65rem] tracking-[0.2em] uppercase block ${doc.tone}`}>{doc.badge}</span>
-                  <h2 className={`font-display text-xl ${key === 'new' ? 'text-gold-light' : 'text-parchment'}`}>{doc.title}</h2>
-                </div>
-                <div className="flex gap-2">
-                  <a
-                    href={doc.path}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 rounded border border-navy-600 px-2.5 py-1.5 text-xs font-mono uppercase tracking-wider text-parchment-muted hover:border-gold/40 hover:text-gold transition-colors"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" /> Open
-                  </a>
-                  <a
-                    href={doc.path}
-                    download
-                    className="inline-flex items-center gap-1 rounded border border-navy-600 px-2.5 py-1.5 text-xs font-mono uppercase tracking-wider text-parchment-muted hover:border-gold/40 hover:text-gold transition-colors"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Download
-                  </a>
+          {/* PDF / Content */}
+          <div className="flex-1 overflow-hidden">
+            {docStatus.old === 'available' && (
+              <iframe
+                title={pdfDocs.old.title}
+                src={`${pdfDocs.old.path}#page=1&view=FitH`}
+                className="w-full h-full min-h-[600px]"
+              />
+            )}
+            {docStatus.old === 'checking' && (
+              <div className="w-full h-96 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3 text-zinc-500">
+                  <div className="w-6 h-6 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin" />
+                  <p className="font-interface text-sm">Loading document...</p>
                 </div>
               </div>
-
-              <div className="rounded-lg overflow-hidden border border-navy-700 bg-navy-950 min-h-[65vh]">
-                {status === 'available' && (
-                  <iframe
-                    title={doc.title}
-                    src={`${doc.path}#page=1&view=FitH`}
-                    className="w-full h-[65vh]"
-                  />
-                )}
-
-                {status === 'checking' && (
-                  <div className="w-full h-[65vh] flex items-center justify-center text-sm text-parchment-muted">
-                    Checking PDF availability...
-                  </div>
-                )}
-
-                {status === 'missing' && (
-                  <div className="w-full h-[65vh] p-6 md:p-8 flex flex-col items-center justify-center text-center">
-                    <FileSearch className="w-8 h-8 text-gold mb-4" />
-                    <h3 className="font-display text-xl mb-2">PDF not found</h3>
-                    <p className="text-parchment-muted text-sm max-w-md">
-                      Place the file at <span className="font-mono text-xs text-gold">public{doc.path.replace(/^\//, '/')}</span> to render this viewer.
-                    </p>
-                  </div>
-                )}
+            )}
+            {docStatus.old === 'missing' && (
+              <div className="w-full h-96 flex flex-col items-center justify-center text-center p-6">
+                <FileSearch className="w-8 h-8 text-zinc-400 mb-3" />
+                <h3 className="font-display font-bold text-black mb-1">Document Not Found</h3>
+                <p className="font-interface text-sm text-zinc-500 max-w-xs">
+                  Place the PDF at <span className="font-mono text-xs bg-zinc-100 px-1.5 py-0.5 rounded">{pdfDocs.old.path}</span>
+                </p>
               </div>
-            </section>
-          );
-        })}
+            )}
+          </div>
+        </section>
+
+        {/* Right: Proposed Constitution */}
+        <section className="bg-zinc-50/50 flex flex-col">
+          {/* Document Header */}
+          <div className="border-b border-zinc-200 px-6 py-3 lg:px-8 lg:py-4 sticky top-14 z-30 glass-effect">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-2">
+                  {pdfDocs.new.badge}
+                </p>
+                <h2 className="font-display text-2xl md:text-3xl font-bold text-black">
+                  {pdfDocs.new.title}
+                </h2>
+              </div>
+              <div className="flex gap-2 shrink-0 ml-4">
+                <span className="font-interface text-[9px] uppercase tracking-[0.15em] bg-black text-white px-3 py-1.5 rounded-md font-medium">
+                  Draft Phase
+                </span>
+                <a
+                  href={pdfDocs.new.path}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-500 hover:text-black hover:border-zinc-400 transition-colors"
+                  title="Open in new tab"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+                <a
+                  href={pdfDocs.new.path}
+                  download
+                  className="w-9 h-9 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-500 hover:text-black hover:border-zinc-400 transition-colors"
+                  title="Download PDF"
+                >
+                  <Download className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* PDF / Content */}
+          <div className="flex-1 overflow-hidden">
+            {docStatus.new === 'available' && (
+              <iframe
+                title={pdfDocs.new.title}
+                src={`${pdfDocs.new.path}#page=1&view=FitH`}
+                className="w-full h-full min-h-[600px]"
+              />
+            )}
+            {docStatus.new === 'checking' && (
+              <div className="w-full h-96 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3 text-zinc-500">
+                  <div className="w-6 h-6 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin" />
+                  <p className="font-interface text-sm">Loading document...</p>
+                </div>
+              </div>
+            )}
+            {docStatus.new === 'missing' && (
+              <div className="w-full h-96 flex flex-col items-center justify-center text-center p-6">
+                <FileSearch className="w-8 h-8 text-zinc-400 mb-3" />
+                <h3 className="font-display font-bold text-black mb-1">Document Not Found</h3>
+                <p className="font-interface text-sm text-zinc-500 max-w-xs">
+                  Place the PDF at <span className="font-mono text-xs bg-zinc-100 px-1.5 py-0.5 rounded">{pdfDocs.new.path}</span>
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
 
-      {/* Sticky Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-navy-900/95 border-t border-navy-700 backdrop-blur flex items-center justify-between z-20">
-        <span className="font-serif italic text-parchment-muted ml-4">Finished reading? Cast your official vote.</span>
-        <Button asChild>
-          <Link to={user ? '/vote' : '/auth/login'}>Go to Ballot →</Link>
-        </Button>
-      </div>
+      <Footer />
+
       <Chatbot pdfSources={chatbotPdfSources} />
     </div>
   );

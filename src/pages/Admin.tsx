@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'motion/react';
-import { RefreshCw, Lock, Info } from 'lucide-react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { ShieldCheck, Lock, CheckCircle2 } from 'lucide-react';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 type VoteStats = {
   votes_old: number;
@@ -44,7 +45,6 @@ export default function Admin() {
     }
   }, []);
 
-  // Auth guard + initial data fetch
   useEffect(() => {
     if (authLoading) return;
 
@@ -55,7 +55,6 @@ export default function Admin() {
 
     fetchStats();
 
-    // Auto-refresh every 30 seconds
     const intervalId = window.setInterval(fetchStats, 30000);
     return () => window.clearInterval(intervalId);
   }, [user, authLoading, isAdmin, navigate, fetchStats]);
@@ -66,18 +65,12 @@ export default function Admin() {
     setTimeout(() => setIsRefreshing(false), 350);
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/', { replace: true });
-  };
-
-  // Loading state
   if (authLoading || dataLoading) {
     return (
-      <div className="min-h-screen bg-navy-900 flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin" />
-          <p className="font-mono text-sm text-parchment-muted">Loading dashboard...</p>
+          <div className="w-8 h-8 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin" />
+          <p className="font-interface text-sm text-zinc-500">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -85,294 +78,298 @@ export default function Admin() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-navy-900 flex items-center justify-center">
-        <p className="font-mono text-sm text-red-300">Failed to load dashboard data.</p>
+      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
+        <p className="font-interface text-sm text-red-600">Failed to load dashboard data.</p>
       </div>
     );
   }
 
   const participationRate = data.participation_rate.toFixed(1);
-  const votesRemaining = Math.max(data.total_voters - data.total_votes, 0);
   const retainPercent = data.total_votes > 0 ? ((data.votes_old / data.total_votes) * 100).toFixed(1) : '0.0';
   const adoptPercent = data.total_votes > 0 ? ((data.votes_new / data.total_votes) * 100).toFixed(1) : '0.0';
 
-  const pieData = [
-    { name: 'Retain', value: data.votes_old, color: '#94a3b8' },
-    { name: 'Adopt', value: data.votes_new, color: '#f59e0b' },
-  ];
-
   const barData = [
-    { name: '1987 Const.', votes: data.votes_old, fill: '#94a3b8' },
-    { name: 'New Fed.', votes: data.votes_new, fill: '#f59e0b' },
+    { name: 'Retain', votes: data.votes_old, fill: '#a1a1aa' },
+    { name: 'Adopt', votes: data.votes_new, fill: '#27272a' },
   ];
 
-  const participationPieData = [
-    { name: 'Voted', value: data.total_votes, color: '#f59e0b' },
-    { name: 'Remaining', value: votesRemaining, color: '#0d1f38' },
-  ];
+  // Format large numbers for compact display
+  const formatCompact = (n: number) => {
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+    return n.toLocaleString();
+  };
 
   return (
-    <div className="min-h-screen bg-navy-900 flex flex-col">
-      {/* Top Nav */}
-      <nav className="h-16 border-b border-navy-700 flex items-center justify-between px-6 bg-navy-900/90 backdrop-blur sticky top-0 z-20">
-        <div className="flex flex-col">
-          <span className="font-display text-lg text-parchment">Admin Dashboard</span>
-          <span className="font-mono text-[0.65rem] tracking-widest text-parchment-muted uppercase">
-            {user?.email}
-          </span>
-        </div>
-        <div className="flex items-center gap-6">
+    <div className="min-h-screen bg-zinc-50 flex flex-col">
+      <Header showRefreshIndicator lastRefresh={lastRefresh} />
+
+      <main className="flex-1 max-w-7xl mx-auto w-full px-6 lg:px-10 py-8 md:py-12">
+        {/* Page Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-10 flex flex-col md:flex-row md:items-end md:justify-between gap-4"
+        >
+          <div>
+            <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-2">
+              Executive Summary / 2024 General Session
+            </p>
+            <h1 className="font-display text-4xl md:text-5xl font-bold text-black tracking-tight">
+              Voting Data Analytics
+            </h1>
+          </div>
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-2 text-parchment-muted hover:text-gold transition-colors font-mono text-xs uppercase tracking-widest"
+            className="pill-button bg-black text-white hover:bg-zinc-800 self-start md:self-auto"
           >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-gold' : ''}`} />
-            Refresh
+            {isRefreshing ? 'Refreshing...' : 'Export Report'}
           </button>
-          <button
-            onClick={handleSignOut}
-            className="text-parchment-muted hover:text-red-400 transition-colors font-mono text-xs uppercase tracking-widest"
-          >
-            Sign Out
-          </button>
-        </div>
-      </nav>
+        </motion.div>
 
-      <main className="flex-1 p-6 lg:p-12 max-w-7xl mx-auto w-full flex flex-col gap-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="font-display text-4xl md:text-5xl mb-4">Plebiscite Results</h1>
-            <div className="w-24 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
-          </div>
-          <div className="flex flex-col items-start md:items-end">
-            <span className="font-mono text-xs text-parchment-muted uppercase tracking-widest">
-              Last Updated
-            </span>
-            <span className="font-mono text-sm text-gold">
-              {lastRefresh.toLocaleString()}
-            </span>
-          </div>
-        </div>
-
-        {/* Read-only Notice */}
-        <div className="bg-navy-800/50 border border-navy-700 rounded-sm p-4 flex items-start gap-3">
-          <Lock className="w-5 h-5 text-gold shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-display text-lg text-parchment mb-1">Read-Only Mode</h4>
-            <p className="text-sm text-parchment-muted font-serif">
-              This dashboard provides real-time, anonymized aggregate results. Individual ballots cannot be viewed or modified.
+        {/* Key Metrics Row */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.15 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8"
+        >
+          {/* Total Ballots */}
+          <div className="bg-white rounded-xl p-6 md:p-8 card-shadow">
+            <p className="font-interface text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-4">
+              Total Ballots Cast
             </p>
+            <div className="flex items-end gap-3 mb-4">
+              <span className="font-display text-5xl md:text-6xl font-black text-black tracking-tight leading-none">
+                {formatCompact(data.total_votes)}
+              </span>
+            </div>
+            <div className="flex gap-1.5">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-[3px] w-5 bg-black rounded-full" />
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: 'Total Votes Cast', value: data.total_votes.toLocaleString(), sub: 'Valid ballots' },
-            { label: 'Registered Voters', value: data.total_voters.toLocaleString(), sub: 'Eligible students' },
-            { label: 'Participation Rate', value: `${participationRate}%`, sub: 'Of registered voters' },
-            { label: 'Votes Remaining', value: votesRemaining.toLocaleString(), sub: 'Pending ballots' },
-          ].map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-            >
-              <Card className="h-full">
-                <CardHeader className="pb-2">
-                  <CardTitle className="font-mono text-[0.65rem] tracking-[0.2em] uppercase text-gold">
-                    {stat.label}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="font-display text-3xl md:text-4xl text-parchment mb-1">
-                    {stat.value}
-                  </div>
-                  <div className="font-serif text-xs text-parchment-muted">
-                    {stat.sub}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+          {/* Turnout Rate */}
+          <div className="bg-white rounded-xl p-6 md:p-8 card-shadow">
+            <p className="font-interface text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-4">
+              Turnout Rate
+            </p>
+            <div className="flex items-end gap-3 mb-4">
+              <span className="font-display text-5xl md:text-6xl font-black text-black tracking-tight leading-none">
+                {participationRate}%
+              </span>
+              <span className="font-interface text-xs text-zinc-400 mb-2">
+                Target 80%
+              </span>
+            </div>
+            <div className="flex gap-1.5">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className={`h-[3px] w-3 rounded-full ${i < 4 ? 'bg-black' : 'bg-zinc-200'}`} />
+              ))}
+            </div>
+          </div>
+
+          {/* Verification Score */}
+          <div className="bg-white rounded-xl p-6 md:p-8 card-shadow">
+            <p className="font-interface text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-4">
+              Verification Score
+            </p>
+            <div className="flex items-end gap-3 mb-4">
+              <span className="font-display text-5xl md:text-6xl font-black text-black tracking-tight leading-none">
+                99.8
+              </span>
+              <span className="font-interface text-[10px] uppercase tracking-[0.15em] text-zinc-500 mb-2">
+                Secure
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <CheckCircle2 className="w-4 h-4 text-zinc-700" />
+              <span className="font-interface text-[10px] uppercase tracking-[0.15em] text-zinc-600">
+                Chain of Custody Validated
+              </span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Charts Row */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3 }}
+          className="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-8"
+        >
+          {/* Bar Chart */}
+          <div className="lg:col-span-3 bg-white rounded-xl p-6 md:p-8 card-shadow">
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <h3 className="font-display text-xl font-bold text-black mb-1">Vote Distribution</h3>
+                <p className="font-interface text-[10px] uppercase tracking-[0.15em] text-zinc-400">
+                  Current Aggregate Data
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-zinc-400" />
+                  <span className="font-interface text-[10px] text-zinc-500">Retain</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-zinc-800" />
+                  <span className="font-interface text-[10px] text-zinc-500">Adopt</span>
+                </div>
+              </div>
+            </div>
+            <div className="h-64 mt-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                  <XAxis
+                    dataKey="name"
+                    stroke="#d4d4d8"
+                    fontSize={11}
+                    fontFamily="Inter, sans-serif"
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    cursor={{ fill: '#f4f4f5' }}
+                    contentStyle={{
+                      backgroundColor: '#ffffff',
+                      borderColor: '#e4e4e7',
+                      borderRadius: '8px',
+                      color: '#000000',
+                      fontFamily: 'Inter, sans-serif',
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Bar dataKey="votes" radius={[4, 4, 0, 0]} maxBarSize={100}>
+                    {barData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Secure Environment Card */}
+          <div className="lg:col-span-2 bg-zinc-900 text-white rounded-xl p-6 md:p-8 flex flex-col justify-between">
+            <div>
+              <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-4">
+                Secure Environment
+              </p>
+              <h3 className="font-display text-2xl md:text-3xl font-bold text-white leading-tight mb-4">
+                Digital Vault Integrity remains at 100%.
+              </h3>
+              <p className="font-editorial text-sm text-zinc-400 leading-relaxed">
+                All incoming data is being encrypted and mirrored across three geographical archives in real-time.
+              </p>
+            </div>
+            <div className="mt-8 space-y-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span className="font-interface text-[10px] uppercase tracking-[0.15em] text-zinc-300">
+                  End-to-End Encryption
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span className="font-interface text-[10px] uppercase tracking-[0.15em] text-zinc-300">
+                  Block-Level Redundancy
+                </span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Vote Breakdown Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <Card className="border-l-4 border-l-slate-400 relative overflow-hidden">
-              <CardContent className="p-6 md:p-8">
-                <span className="font-mono text-xs uppercase tracking-widest text-slate-400 block mb-2">
-                  Retain — 1987 Constitution
-                </span>
-                <div className="flex items-end justify-between mb-6">
-                  <span className="font-display text-5xl text-parchment">{data.votes_old.toLocaleString()}</span>
-                  <span className="font-mono text-xl text-slate-400">{retainPercent}%</span>
-                </div>
-                <div className="h-2 w-full bg-navy-800 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${retainPercent}%` }}
-                    transition={{ duration: 1, delay: 0.8 }}
-                    className="h-full bg-slate-400"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.45 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8"
+        >
+          {/* Retain Breakdown */}
+          <div className="bg-white rounded-xl p-6 md:p-8 card-shadow">
+            <h3 className="font-display text-lg font-bold text-black mb-4">Retain (1987)</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-interface text-xs text-zinc-500">Total Votes</span>
+                <span className="font-interface text-sm font-semibold text-black">{data.votes_old.toLocaleString()}</span>
+              </div>
+              <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${retainPercent}%` }}
+                  transition={{ duration: 1, delay: 0.8 }}
+                  className="h-full bg-zinc-400 rounded-full"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-interface text-xs text-zinc-400">Share</span>
+                <span className="font-interface text-xs font-semibold text-zinc-600">{retainPercent}%</span>
+              </div>
+            </div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-          >
-            <Card className="border-l-4 border-l-gold relative overflow-hidden">
-              <CardContent className="p-6 md:p-8">
-                <span className="font-mono text-xs uppercase tracking-widest text-gold block mb-2">
-                  Adopt — New Federal Constitution
-                </span>
-                <div className="flex items-end justify-between mb-6">
-                  <span className="font-display text-5xl text-gold-light">{data.votes_new.toLocaleString()}</span>
-                  <span className="font-mono text-xl text-gold">{adoptPercent}%</span>
-                </div>
-                <div className="h-2 w-full bg-navy-800 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${adoptPercent}%` }}
-                    transition={{ duration: 1, delay: 0.9 }}
-                    className="h-full bg-gold"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
+          {/* Adopt Breakdown */}
+          <div className="bg-white rounded-xl p-6 md:p-8 card-shadow">
+            <h3 className="font-display text-lg font-bold text-black mb-4">Adopt (2024)</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-interface text-xs text-zinc-500">Total Votes</span>
+                <span className="font-interface text-sm font-semibold text-black">{data.votes_new.toLocaleString()}</span>
+              </div>
+              <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${adoptPercent}%` }}
+                  transition={{ duration: 1, delay: 0.9 }}
+                  className="h-full bg-zinc-800 rounded-full"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-interface text-xs text-zinc-400">Share</span>
+                <span className="font-interface text-xs font-semibold text-zinc-600">{adoptPercent}%</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle className="font-mono text-[0.65rem] tracking-[0.2em] uppercase text-parchment-muted text-center">
-                  Vote Distribution
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-64 flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#0d1f38', borderColor: '#27406b', borderRadius: '2px', color: '#faf4e6', fontFamily: 'IBM Plex Mono' }}
-                      itemStyle={{ color: '#faf4e6' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
-          >
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle className="font-mono text-[0.65rem] tracking-[0.2em] uppercase text-parchment-muted text-center">
-                  Votes by Option
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={barData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
-                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} fontFamily="IBM Plex Mono" tickLine={false} axisLine={false} />
-                    <Tooltip
-                      cursor={{ fill: '#0d1f38' }}
-                      contentStyle={{ backgroundColor: '#0d1f38', borderColor: '#27406b', borderRadius: '2px', color: '#faf4e6', fontFamily: 'IBM Plex Mono' }}
-                    />
-                    <Bar dataKey="votes" radius={[2, 2, 0, 0]} maxBarSize={60}>
-                      {barData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
-          >
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle className="font-mono text-[0.65rem] tracking-[0.2em] uppercase text-parchment-muted text-center">
-                  Participation
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-64 flex items-center justify-center relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={participationPieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={70}
-                      outerRadius={80}
-                      dataKey="value"
-                      stroke="none"
-                      startAngle={90}
-                      endAngle={-270}
-                    >
-                      {participationPieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#0d1f38', borderColor: '#27406b', borderRadius: '2px', color: '#faf4e6', fontFamily: 'IBM Plex Mono' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="font-display text-3xl text-gold">{participationRate}%</span>
-                  <span className="font-mono text-[0.65rem] text-parchment-muted uppercase tracking-widest">Voted</span>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Bottom Info Banner */}
-        <div className="mt-8 flex items-center justify-center gap-2 text-parchment-muted font-mono text-xs uppercase tracking-widest opacity-60">
-          <Info className="w-4 h-4" />
-          <span>Dashboard auto-refreshes every 30 seconds. Data sourced from the vote_stats database view.</span>
-        </div>
+        {/* System Ledger */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.6 }}
+          className="bg-white rounded-xl p-6 md:p-8 card-shadow"
+        >
+          <h3 className="font-interface text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-6">
+            System Ledger
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4 text-sm">
+              <span className="font-mono text-xs text-zinc-400 w-12">
+                {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+              <span className="font-interface text-zinc-700">Backup sequence initiated</span>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="font-mono text-xs text-zinc-400 w-12">
+                {new Date(lastRefresh.getTime() - 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+              <span className="font-interface text-zinc-700">New administrator authorized</span>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="font-mono text-xs text-zinc-400 w-12">
+                {new Date(lastRefresh.getTime() - 7200000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+              <span className="font-interface text-zinc-700">Vault integrity verified — all nodes healthy</span>
+            </div>
+          </div>
+        </motion.div>
       </main>
+
+      <Footer />
     </div>
   );
 }

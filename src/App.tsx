@@ -22,8 +22,11 @@ export default function App() {
             element={
               <Suspense
                 fallback={
-                  <div className="min-h-screen bg-navy-900 text-parchment flex items-center justify-center">
-                    Loading comparison view...
+                  <div className="min-h-screen bg-white text-black flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      <p className="font-interface text-sm text-zinc-600">Loading document viewer...</p>
+                    </div>
                   </div>
                 }
               >

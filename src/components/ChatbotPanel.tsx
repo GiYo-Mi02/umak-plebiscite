@@ -217,33 +217,33 @@ ${pdfContext}`;
     <div className="fixed bottom-24 right-6 z-50">
       {/* Chat Window */}
       {isOpen && (
-        <div className="bg-navy-800 border border-navy-700 rounded-lg shadow-2xl w-80 sm:w-96 mb-4 flex flex-col overflow-hidden transition-all duration-300 transform origin-bottom-right">
-          <div className="bg-navy-900 border-b border-navy-700 p-4 flex justify-between items-center text-parchment">
+        <div className="bg-white border border-zinc-200 rounded-lg shadow-lg w-80 sm:w-96 mb-4 flex flex-col overflow-hidden transition-all duration-300 transform origin-bottom-right">
+          <div className="bg-white border-b border-zinc-200 p-4 flex justify-between items-center text-black">
             <div className="flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-gold" />
-              <h3 className="font-display text-lg text-gold-light">CongressAI Guide</h3>
+              <MessageCircle className="w-5 h-5 text-black" />
+              <h3 className="font-interface font-bold text-base">Archive Assistant</h3>
             </div>
-            <button onClick={() => setIsOpen(false)} className="text-slate-muted hover:text-parchment">
+            <button onClick={() => setIsOpen(false)} className="text-zinc-600 hover:text-black">
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="p-4 h-80 overflow-y-auto flex flex-col gap-3 bg-navy-800/50">
+          <div className="p-4 h-80 overflow-y-auto flex flex-col gap-3 bg-zinc-50">
             {contextStatus !== 'ready' && (
-              <div className="text-xs text-parchment-muted border border-navy-700 rounded-md px-3 py-2 bg-navy-900/60">
+              <div className="text-xs text-zinc-600 border border-zinc-200 rounded-md px-3 py-2 bg-white">
                 {contextStatus === 'loading'
-                  ? 'Preparing AI context from the PDF files...'
-                  : `PDF context unavailable: ${contextError}`}
+                  ? 'Loading document context...'
+                  : `Context unavailable: ${contextError}`}
               </div>
             )}
             {messages.map((msg, idx) => (
               <div key={idx} className={`max-w-[85%] p-3 rounded-lg text-sm ${
                 msg.role === 'user' 
-                  ? 'bg-gold/20 text-parchment self-end rounded-br-none border border-gold/30' 
-                  : 'bg-navy-700 text-parchment-muted self-start rounded-bl-none border border-navy-600'
+                  ? 'bg-black text-white self-end rounded-br-none' 
+                  : 'bg-zinc-100 text-zinc-900 self-start rounded-bl-none border border-zinc-200'
               }`}>
                 {msg.role === 'model' ? (
-                  <div className="prose prose-invert prose-sm max-w-none text-parchment-muted marker:text-gold">
+                  <div className="prose prose-sm max-w-none text-zinc-900 marker:text-black">
                     <ReactMarkdown>{msg.text}</ReactMarkdown>
                   </div>
                 ) : (
@@ -252,26 +252,26 @@ ${pdfContext}`;
               </div>
             ))}
             {isLoading && (
-              <div className="bg-navy-700 text-parchment-muted self-start rounded-lg rounded-bl-none p-3 max-w-[85%] border border-navy-600 flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-gold" /> Let me check...
+              <div className="bg-zinc-100 text-zinc-900 self-start rounded-lg rounded-bl-none p-3 max-w-[85%] border border-zinc-200 flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-black" /> Checking...
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="p-3 border-t border-navy-700 bg-navy-900 flex gap-2">
+          <div className="p-3 border-t border-zinc-200 bg-white flex gap-2">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask about the constitutions..."
-              className="flex-1 bg-navy-800 border border-navy-700 rounded-md px-3 py-2 text-sm text-parchment focus:outline-none focus:border-gold/50"
+              placeholder="Ask a question..."
+              className="flex-1 bg-zinc-50 border border-zinc-200 rounded-md px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black"
             />
             <button 
               onClick={handleSend}
               disabled={isLoading || !input.trim()}
-              className="bg-gold/10 hover:bg-gold/20 text-gold p-2 rounded-md disabled:opacity-50 transition-colors"
+              className="bg-black hover:bg-zinc-800 text-white p-2 rounded-md disabled:opacity-50 transition-colors"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -282,7 +282,7 @@ ${pdfContext}`;
       {/* Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-gold hover:bg-gold-light text-navy-900 p-4 rounded-full shadow-lg transition-transform hover:scale-105 float-right"
+        className="bg-black hover:bg-zinc-800 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-105 float-right"
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>

@@ -10,11 +10,11 @@ export interface ButtonProps
 
 function getButtonClasses(variant: string, size: string, className?: string) {
   return cn(
-    "inline-flex items-center justify-center whitespace-nowrap rounded-sm text-sm font-mono uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold disabled:pointer-events-none disabled:opacity-50",
+    "inline-flex items-center justify-center whitespace-nowrap rounded-sm text-sm font-interface font-medium uppercase tracking-widest transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:pointer-events-none disabled:opacity-50",
     {
-      "bg-gold text-navy-900 hover:bg-gold-light": variant === "default",
-      "border border-gold text-gold hover:bg-gold/10": variant === "outline",
-      "hover:bg-navy-800 text-parchment": variant === "ghost",
+      "bg-black text-white hover:bg-zinc-800": variant === "default",
+      "border-2 border-zinc-300 text-black hover:bg-zinc-50": variant === "outline",
+      "hover:bg-zinc-100 text-black": variant === "ghost",
       "h-9 px-4 py-2": size === "default",
       "h-8 px-3 text-xs": size === "sm",
       "h-10 px-8": size === "lg",
@@ -29,7 +29,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const classes = getButtonClasses(variant, size, className)
 
     if (asChild && React.isValidElement(children)) {
-      // Clone the child element and merge button classes onto it
       return React.cloneElement(children as React.ReactElement<any>, {
         className: cn(classes, (children as React.ReactElement<any>).props.className),
         ref,

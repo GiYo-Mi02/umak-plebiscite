@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'motion/react';
-import { Layers, PlusCircle, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
+import Footer from '@/components/Footer';
 
 type VoteChoice = 'old' | 'new';
 type VoteStep = 'loading' | 'vote' | 'confirm' | 'success' | 'already_voted' | 'error';
@@ -18,7 +17,6 @@ export default function Vote() {
   const [submitError, setSubmitError] = useState('');
   const [existingChoice, setExistingChoice] = useState<VoteChoice | null>(null);
 
-  // Check auth and existing vote status on mount
   useEffect(() => {
     if (authLoading) return;
 
@@ -32,7 +30,6 @@ export default function Vote() {
       return;
     }
 
-    // Check if the user has already voted
     const checkVoteStatus = async () => {
       try {
         const { data: voter, error: voterError } = await supabase
@@ -43,13 +40,11 @@ export default function Vote() {
 
         if (voterError) {
           console.error('Error checking voter status:', voterError);
-          // Voter record might not exist yet (trigger may be delayed)
           setStep('vote');
           return;
         }
 
         if (voter?.has_voted) {
-          // Fetch existing vote to show what they chose
           const { data: vote } = await supabase
             .from('votes')
             .select('choice')
@@ -73,7 +68,7 @@ export default function Vote() {
     checkVoteStatus();
   }, [user, authLoading, isAdmin, navigate]);
 
-  const handleVote = () => {
+  const handleCastVote = () => {
     if (!selected) return;
     setSubmitError('');
     setStep('confirm');
@@ -88,7 +83,6 @@ export default function Vote() {
     setSubmitError('');
 
     try {
-      // Call the atomic cast_vote() PostgreSQL function
       const { data, error: rpcError } = await supabase.rpc('cast_vote', {
         p_choice: selected,
       });
@@ -99,7 +93,6 @@ export default function Vote() {
         return;
       }
 
-      // The function returns JSON: { success: boolean, error?: string }
       const result = data as { success: boolean; error?: string };
 
       if (!result.success) {
@@ -125,251 +118,298 @@ export default function Vote() {
     navigate('/', { replace: true });
   };
 
-  // Loading state
   if (step === 'loading') {
     return (
-      <div className="min-h-screen bg-navy-900 bg-grid-pattern flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin" />
-          <p className="font-mono text-sm text-parchment-muted">Loading your ballot...</p>
+          <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+          <p className="font-interface text-sm text-zinc-500">Loading your ballot...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-navy-900 bg-grid-pattern flex flex-col items-center p-6">
-      {/* Top Bar */}
-      <nav className="w-full max-w-3xl flex items-center justify-between mb-12">
-        <Link to="/" className="text-parchment-muted hover:text-gold transition-colors font-mono text-xs uppercase tracking-widest">
-          ← Home
-        </Link>
-        <button
-          onClick={handleSignOut}
-          className="text-parchment-muted hover:text-gold transition-colors font-mono text-xs uppercase tracking-widest"
-        >
-          Sign Out
-        </button>
-      </nav>
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Minimal Top Bar */}
+      <div className="h-10 flex items-center justify-center px-6 border-b border-zinc-100">
+        <div className="flex items-center gap-2 font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-400">
+          <Link to="/" className="hover:text-black transition-colors">Archive</Link>
+          <span>/</span>
+          <span className="text-zinc-600">Ballot 0422</span>
+        </div>
+      </div>
 
-      <main className="w-full max-w-2xl flex flex-col items-center text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <span className="font-mono text-[0.65rem] tracking-[0.2em] uppercase text-gold mb-4 block">
-            Official Student Ballot
-          </span>
-          <h1 className="font-display text-4xl mb-6">Cast Your Vote</h1>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="w-16 h-px bg-gradient-to-r from-transparent via-gold to-transparent mb-6"
-        />
-
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="font-mono text-xs text-parchment-muted mb-10"
-        >
-          Voting as: {user?.email || 'loading...'}
-        </motion.span>
-
+      <main className="flex-1 flex flex-col items-center px-6">
         <AnimatePresence mode="wait">
+          {/* ============ VOTE STEP ============ */}
           {step === 'vote' && (
             <motion.div
               key="vote"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
-              className="w-full flex flex-col gap-6"
+              transition={{ duration: 0.6 }}
+              className="w-full max-w-3xl flex flex-col items-center pt-12 md:pt-20 pb-16"
             >
-              <Card className="border-navy-700 bg-navy-800/50">
-                <CardContent className="p-8">
-                  <p className="font-serif italic text-xl text-parchment/90">
-                    Do you support the adoption of the proposed New Federal Constitution to replace the 1987 Constitution?
-                  </p>
-                </CardContent>
-              </Card>
+              {/* Question */}
+              <motion.h1
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.1 }}
+                className="font-display italic text-4xl md:text-5xl lg:text-6xl font-bold text-black text-center leading-[1.1] mb-12 md:mb-16 max-w-2xl"
+              >
+                Should the Council adopt the proposed constitution charter?
+              </motion.h1>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Divider */}
+              <div className="w-full border-t border-zinc-200 mb-12 md:mb-16" />
+
+              {/* Choice Cards */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.2 }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mb-12"
+              >
+                {/* Option A: Retain */}
                 <button
                   onClick={() => setSelected('old')}
-                  className={`relative flex flex-col items-start text-left p-6 rounded-sm border transition-all ${
+                  className={`relative text-left p-8 md:p-10 rounded-lg transition-all duration-300 ${
                     selected === 'old'
-                      ? 'border-slate-400 bg-slate-900/40'
-                      : 'border-navy-700 bg-navy-900/60 hover:border-slate-600'
+                      ? 'border-[3px] border-black bg-white'
+                      : 'border border-zinc-200 bg-white hover:border-zinc-400'
                   }`}
                 >
-                  <Layers className={`w-6 h-6 mb-4 ${selected === 'old' ? 'text-slate-300' : 'text-slate-500'}`} />
-                  <h3 className={`font-display text-lg mb-2 ${selected === 'old' ? 'text-slate-200' : 'text-slate-400'}`}>
-                    Retain — 1987 Constitution
+                  {selected === 'old' && (
+                    <div className="absolute top-5 right-5 w-3 h-3 rounded-full bg-black" />
+                  )}
+                  <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-4">
+                    Option A
+                  </p>
+                  <h3 className="font-display text-2xl md:text-3xl font-bold text-black mb-4">
+                    Retain
                   </h3>
-                  <p className="font-serif text-sm text-slate-500">
-                    Keep the current constitutional framework.
+                  <p className="font-editorial text-sm text-zinc-600 leading-relaxed">
+                    Maintain the current 1987 protocols without amendment. Prioritizes historical continuity over structural expansion.
                   </p>
                   {selected === 'old' && (
-                    <div className="absolute top-4 right-4 w-3 h-3 rounded-full bg-slate-400" />
+                    <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-black font-semibold mt-6 pt-4 border-t border-zinc-200">
+                      Selected
+                    </p>
                   )}
                 </button>
 
+                {/* Option B: Adopt */}
                 <button
                   onClick={() => setSelected('new')}
-                  className={`relative flex flex-col items-start text-left p-6 rounded-sm border transition-all ${
+                  className={`relative text-left p-8 md:p-10 rounded-lg transition-all duration-300 ${
                     selected === 'new'
-                      ? 'border-gold bg-gold/10'
-                      : 'border-navy-700 bg-navy-900/60 hover:border-gold/50'
+                      ? 'border-[3px] border-black bg-white'
+                      : 'border border-zinc-200 bg-white hover:border-zinc-400'
                   }`}
                 >
-                  <PlusCircle className={`w-6 h-6 mb-4 ${selected === 'new' ? 'text-gold' : 'text-gold/50'}`} />
-                  <h3 className={`font-display text-lg mb-2 ${selected === 'new' ? 'text-gold-light' : 'text-gold/70'}`}>
-                    Adopt — New Federal Constitution
+                  {selected === 'new' && (
+                    <div className="absolute top-5 right-5 w-3 h-3 rounded-full bg-black" />
+                  )}
+                  <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-4">
+                    Option B
+                  </p>
+                  <h3 className="font-display text-2xl md:text-3xl font-bold text-black mb-4">
+                    Adopt
                   </h3>
-                  <p className="font-serif text-sm text-parchment-muted">
-                    Transition to the proposed federal system.
+                  <p className="font-editorial text-sm text-zinc-600 leading-relaxed">
+                    Implement the 2024 Modernization Act. Introduces digital redundancy and climate-controlled preservation vaults.
                   </p>
                   {selected === 'new' && (
-                    <div className="absolute top-4 right-4 w-3 h-3 rounded-full bg-gold" />
+                    <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-black font-semibold mt-6 pt-4 border-t border-zinc-200">
+                      Selected
+                    </p>
                   )}
                 </button>
-              </div>
+              </motion.div>
 
-              <div className="mt-4">
-                <Link to="/compare" className="font-mono text-xs text-parchment-muted hover:text-gold transition-colors">
-                  Read both constitutions before voting →
-                </Link>
-              </div>
-
+              {/* Institutional Notice */}
               <AnimatePresence>
                 {selected && (
                   <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mt-6"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="w-full flex flex-col items-center"
                   >
-                    <Button size="lg" onClick={handleVote} className="w-full sm:w-auto">
-                      Review & Confirm Vote
-                    </Button>
+                    <div className="bg-zinc-50 border border-zinc-200 rounded-lg px-8 py-6 mb-10 max-w-lg text-center">
+                      <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-3">
+                        Institutional Notice
+                      </p>
+                      <p className="font-editorial italic text-sm text-zinc-600 leading-relaxed">
+                        Your selection is recorded anonymously. Once cast, this digital ballot cannot be retrieved or modified.
+                      </p>
+                    </div>
+
+                    {/* Error */}
+                    {submitError && (
+                      <p className="font-interface text-xs text-red-600 mb-4 text-center">
+                        {submitError}
+                      </p>
+                    )}
+
+                    <button
+                      onClick={handleCastVote}
+                      className="pill-button bg-black text-white hover:bg-zinc-800 mb-4"
+                    >
+                      Cast Permanent Vote
+                    </button>
+                    <Link
+                      to="/compare"
+                      className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-500 hover:text-black transition-colors"
+                    >
+                      Review Ballot Documentation
+                    </Link>
                   </motion.div>
                 )}
               </AnimatePresence>
             </motion.div>
           )}
 
+          {/* ============ CONFIRM STEP ============ */}
           {step === 'confirm' && (
             <motion.div
               key="confirm"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
-              className="w-full"
+              transition={{ duration: 0.6 }}
+              className="w-full max-w-md flex flex-col items-center pt-20 md:pt-28 pb-16"
             >
-              <Card className={selected === 'new' ? 'border-gold/50' : 'border-slate-500/50'}>
-                <CardContent className="p-8 flex flex-col items-center text-center">
-                  <span className="font-mono text-xs uppercase tracking-widest text-parchment-muted mb-4">
-                    You have selected
-                  </span>
-                  <h2 className={`font-display text-3xl mb-6 ${selected === 'new' ? 'text-gold-light' : 'text-slate-200'}`}>
-                    {selected === 'new' ? 'Adopt — New Federal Constitution' : 'Retain — 1987 Constitution'}
-                  </h2>
-                  
-                  <div className="bg-red-950/30 border border-red-900/50 rounded-sm p-4 mb-8">
-                    <p className="text-red-200/80 text-sm font-serif italic">
-                      Warning: Your vote is permanent and irreversible. Once submitted, you cannot change your selection.
-                    </p>
-                  </div>
+              <h2 className="font-interface text-[11px] uppercase tracking-[0.2em] text-zinc-500 mb-8">
+                Confirm Your Choice
+              </h2>
 
-                  <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-                    <Button variant="outline" size="lg" onClick={() => setStep('vote')}>
-                      Go Back
-                    </Button>
-                    <Button size="lg" onClick={handleConfirm}>
-                      Submit Ballot
-                    </Button>
-                  </div>
-                  {submitError ? (
-                    <p className="mt-4 text-sm text-red-300 font-mono">{submitError}</p>
-                  ) : null}
-                </CardContent>
-              </Card>
+              <div className="border-[3px] border-black rounded-lg p-10 mb-10 w-full text-center bg-white">
+                <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-3">
+                  Your Selection
+                </p>
+                <h3 className="font-display text-4xl font-bold text-black mb-3">
+                  {selected === 'old' ? 'Retain' : 'Adopt'}
+                </h3>
+                <p className="font-editorial text-sm text-zinc-600">
+                  {selected === 'old'
+                    ? 'Keep the current 1987 constitution'
+                    : 'Adopt the 2024 modernization proposal'}
+                </p>
+              </div>
+
+              <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-6 mb-10 w-full text-center">
+                <p className="font-editorial italic text-sm text-zinc-600 leading-relaxed">
+                  This action is permanent and irreversible. Once cast, your ballot cannot be changed. Proceed only when you are certain.
+                </p>
+              </div>
+
+              {submitError && (
+                <p className="font-interface text-xs text-red-600 mb-6 text-center">
+                  {submitError}
+                </p>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                <button
+                  onClick={() => setStep('vote')}
+                  className="pill-button border border-zinc-300 text-black hover:bg-zinc-50"
+                >
+                  Go Back
+                </button>
+                <button
+                  onClick={handleConfirm}
+                  className="pill-button bg-black text-white hover:bg-zinc-800"
+                >
+                  Cast Permanent Vote
+                </button>
+              </div>
             </motion.div>
           )}
 
+          {/* ============ ALREADY VOTED ============ */}
           {step === 'already_voted' && (
             <motion.div
               key="already-voted"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="w-full"
+              transition={{ duration: 0.6 }}
+              className="w-full max-w-md flex flex-col items-center text-center pt-20 md:pt-28 pb-16"
             >
-              <Card className="border-gold/30 bg-navy-800/80">
-                <CardContent className="p-12 flex flex-col items-center text-center">
-                  <div className="w-20 h-20 rounded-full border-2 border-gold flex items-center justify-center mb-6">
-                    <CheckCircle2 className="w-10 h-10 text-gold" />
-                  </div>
-                  <span className="font-mono text-[0.65rem] tracking-[0.2em] uppercase text-gold mb-4 block">
-                    Ballot Locked
-                  </span>
-                  <h2 className="font-display text-3xl mb-4 text-parchment">This account already voted</h2>
-                  <p className="text-parchment-muted max-w-md">
-                    Each UMAK student can submit one ballot only. Your previously submitted vote remains final and cannot be changed.
-                  </p>
-                  {existingChoice ? (
-                    <p className="mt-6 font-mono text-xs uppercase tracking-widest text-gold">
-                      Recorded Selection: {existingChoice === 'new' ? 'Adopt - New Federal Constitution' : 'Retain - 1987 Constitution'}
-                    </p>
-                  ) : null}
-                  <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                    <Button asChild variant="outline">
-                      <Link to="/compare">Read the Constitutions</Link>
-                    </Button>
-                    <Button asChild>
-                      <Link to="/">Return Home</Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="w-16 h-16 rounded-full bg-black flex items-center justify-center mb-8"
+              >
+                <CheckCircle2 className="w-8 h-8 text-white" />
+              </motion.div>
+
+              <h2 className="font-interface font-bold text-2xl text-black mb-3">Ballot Locked</h2>
+              <p className="font-editorial text-sm text-zinc-600 mb-6 leading-relaxed">
+                Your account has already cast a ballot. Each voter may submit one ballot only. Your vote is final and cannot be changed.
+              </p>
+
+              {existingChoice && (
+                <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-8 bg-zinc-100 px-5 py-2.5 rounded-full">
+                  Recorded: {existingChoice === 'old' ? 'Retain' : 'Adopt'}
+                </p>
+              )}
+
+              <div className="flex flex-col gap-3 w-full">
+                <Link
+                  to="/compare"
+                  className="pill-button border border-zinc-300 text-black hover:bg-zinc-50 text-center"
+                >
+                  Read Full Documents
+                </Link>
+                <Link
+                  to="/"
+                  className="pill-button bg-black text-white hover:bg-zinc-800 text-center"
+                >
+                  Return Home
+                </Link>
+              </div>
             </motion.div>
           )}
 
+          {/* ============ SUCCESS ============ */}
           {step === 'success' && (
             <motion.div
               key="success"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="w-full"
+              transition={{ duration: 0.6 }}
+              className="w-full max-w-md flex flex-col items-center text-center pt-20 md:pt-28 pb-16"
             >
-              <Card className="border-gold/30 bg-navy-800/80">
-                <CardContent className="p-12 flex flex-col items-center text-center">
-                  <div className="w-20 h-20 rounded-full border-2 border-gold flex items-center justify-center mb-6">
-                    <CheckCircle2 className="w-10 h-10 text-gold" />
-                  </div>
-                  <span className="font-mono text-[0.65rem] tracking-[0.2em] uppercase text-gold mb-4 block">
-                    Ballot Accepted
-                  </span>
-                  <h2 className="font-display text-3xl mb-4 text-parchment">Vote successfully cast</h2>
-                  <p className="text-parchment-muted max-w-md">
-                    Thank you for participating in the plebiscite. Your vote has been securely recorded and remains completely anonymous.
-                  </p>
-                  <Button asChild variant="outline" className="mt-8">
-                    <Link to="/">Return Home</Link>
-                  </Button>
-                </CardContent>
-              </Card>
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="w-16 h-16 rounded-full bg-black flex items-center justify-center mb-8"
+              >
+                <CheckCircle2 className="w-8 h-8 text-white" />
+              </motion.div>
+
+              <h2 className="font-interface font-bold text-2xl text-black mb-3">Ballot Accepted</h2>
+              <p className="font-editorial text-sm text-zinc-600 mb-8 leading-relaxed">
+                Your vote has been securely recorded. It remains completely anonymous and cannot be traced or changed. Thank you for participating.
+              </p>
+
+              <Link
+                to="/"
+                className="pill-button bg-black text-white hover:bg-zinc-800 text-center"
+              >
+                Return Home
+              </Link>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      <Footer />
     </div>
   );
 }

@@ -2,30 +2,71 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --color-navy-900: #070f1c;
-  --color-navy-800: #0d1f38;
-  --color-navy-700: #27406b;
-  --color-parchment: #faf4e6;
-  --color-parchment-muted: rgba(245, 233, 205, 0.6);
-  --color-gold: #f59e0b;
-  --color-gold-light: #fbbf24;
-  --color-slate-muted: #94a3b8;
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-400: #a1a1a6;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #52525b;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-emerald-500: #10b981;
 
-  --font-serif: "Source Serif 4", serif;
-  --font-display: "Playfair Display", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: "Playfair Display", "Georgia", serif;
+  --font-body: "Source Serif 4", "Georgia", serif;
   --font-mono: "IBM Plex Mono", monospace;
 }
 
 @layer base {
   body {
-    @apply bg-navy-900 text-parchment font-serif antialiased selection:bg-gold selection:text-navy-900;
+    @apply bg-white text-zinc-900 font-sans antialiased selection:bg-zinc-900 selection:text-white;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-bold;
   }
 }
 
 @layer utilities {
-  .bg-grid-pattern {
-    background-image: linear-gradient(to right, rgba(250, 244, 230, 0.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(250, 244, 230, 0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
+  .font-display {
+    font-family: "Playfair Display", "Georgia", serif;
+  }
+
+  .font-editorial {
+    font-family: "Source Serif 4", "Georgia", serif;
+  }
+
+  .font-interface {
+    @apply font-sans;
+  }
+
+  .pill-button {
+    @apply rounded-full px-8 py-3 font-sans font-medium text-xs uppercase tracking-[0.15em] transition-all;
+  }
+
+  .hairline-border {
+    border-color: #e4e4e7;
+  }
+
+  .soft-shadow {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+  }
+
+  .card-shadow {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 0 1px rgba(0, 0, 0, 0.06);
+  }
+
+  .glass-effect {
+    @apply backdrop-blur-md;
+    background: rgba(255, 255, 255, 0.85);
+  }
+
+  .tracking-ui {
+    letter-spacing: 0.15em;
   }
 }
