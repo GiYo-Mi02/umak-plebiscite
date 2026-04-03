@@ -8,7 +8,6 @@ type HeaderProps = {
 };
 
 const navItems = [
-  { label: 'Document', href: '/compare', activeOn: '' },
   { label: 'Compare', href: '/compare', activeOn: '/compare' },
   { label: 'Vote', href: '/vote', activeOn: '/vote' },
   { label: 'Analytics', href: '/admin', activeOn: '/admin' },

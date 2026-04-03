@@ -22,7 +22,7 @@ export default function Landing() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="font-interface text-[10px] uppercase tracking-[0.25em] text-zinc-400 mb-6"
         >
-          Enter the Archives
+          Boses mo I-boto mo!
         </motion.p>
 
         <motion.h1
@@ -32,10 +32,10 @@ export default function Landing() {
           className="font-display leading-[0.95] mb-8"
         >
           <span className="block text-6xl md:text-8xl lg:text-9xl font-black text-black tracking-tight">
-            The Modern
+            Ang Boses ng
           </span>
           <span className="block text-6xl md:text-8xl lg:text-9xl font-bold italic text-black tracking-tight">
-            Archivist
+            HERON
           </span>
         </motion.h1>
 
@@ -45,7 +45,7 @@ export default function Landing() {
           transition={{ duration: 0.7, delay: 0.25 }}
           className="font-editorial italic text-base md:text-lg text-zinc-600 max-w-lg mb-10 leading-relaxed"
         >
-          A digital forum for the curation of history and the collective governance of shared cultural documentation.
+         Isang makasaysayang hakbang sa pangunguna ng UMak University Student Council (USC) at ng lahat ng College Student Councils (CSC).
         </motion.p>
 
         <motion.div
@@ -94,20 +94,14 @@ export default function Landing() {
           <div className="flex flex-col justify-center p-8 lg:p-14">
             <div className="w-12 h-[1px] bg-zinc-300 mb-8" />
             <h2 className="font-display text-3xl md:text-4xl font-bold text-black mb-1 leading-tight">
-              Preserving the
+              Mga Dapat
             </h2>
             <h2 className="font-display text-3xl md:text-4xl font-bold italic text-black mb-6 leading-tight">
-              ephemeral.
+              Malaman.
             </h2>
             <p className="font-editorial text-sm md:text-base text-zinc-600 leading-relaxed mb-8 max-w-md">
-              Our latest proposal examines the intersection of decentralized storage and classical archival methodologies. Join the discourse today.
+             Inaanyayahan ang bawat mag-aaral na suriin ang panukalang New Federal Constitution. Ang boto mo ang huhubog sa ating kinabukasan.
             </p>
-            <Link
-              to="/compare"
-              className="font-interface text-[10px] uppercase tracking-[0.2em] text-black font-semibold border-b border-black pb-1 self-start hover:text-zinc-600 hover:border-zinc-600 transition-colors"
-            >
-              View Journal Index
-            </Link>
           </div>
         </motion.div>
       </section>

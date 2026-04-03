@@ -9,7 +9,7 @@ export default function Footer({ variant = 'full' }: FooterProps) {
     return (
       <footer className="py-8 text-center">
         <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-400">
-          © 2024 The Modern Archivist. All rights reserved.
+          © 2026 The Plebiscite 2026. All rights reserved.
         </p>
       </footer>
     );
@@ -20,7 +20,7 @@ export default function Footer({ variant = 'full' }: FooterProps) {
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* Brand */}
         <Link to="/" className="font-display italic text-sm font-bold text-black tracking-tight">
-          ARCHIVE
+          University of Makati
         </Link>
 
         {/* Links */}
@@ -47,7 +47,7 @@ export default function Footer({ variant = 'full' }: FooterProps) {
 
         {/* Copyright */}
         <p className="font-interface text-[10px] uppercase tracking-[0.18em] text-zinc-400">
-          © 2024 The Modern Archivist. All rights reserved.
+          © 2026 The Plebiscite 2026. All rights reserved.
         </p>
       </div>
     </footer>
