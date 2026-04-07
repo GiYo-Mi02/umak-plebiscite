@@ -73,7 +73,7 @@ async function readPdfText(getDocumentFn: (params: { url: string }) => any, titl
 export default function ChatBot({ pdfSources }: ChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: 'Hi! I am your Constitutional Guide. Ask me anything about the differences between the 1987 Constitution and the proposed Federal Constitution.' }
+    { role: 'model', text: 'Hi! I am your Constitutional Guide. Ask me anything about the differences between the 2019 USC Constitution and the proposed 2026 USC Constitution.' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);

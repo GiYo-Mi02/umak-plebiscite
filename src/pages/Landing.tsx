@@ -80,13 +80,13 @@ export default function Landing() {
           {/* Image */}
           <div className="relative overflow-hidden bg-zinc-100">
             <img
-              src="/hero-exhibition.png"
+              src="/Umak-cover.jpeg"
               alt="Exhibition room"
               className="w-full h-full object-cover grayscale"
               style={{ minHeight: '320px' }}
             />
             <div className="absolute bottom-4 left-4 bg-black/70 text-white font-interface text-[9px] uppercase tracking-[0.2em] px-3 py-1.5">
-              Exhibition Room 01
+              University of Makati Student Council
             </div>
           </div>
 

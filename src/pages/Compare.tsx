@@ -11,12 +11,12 @@ type DocStatus = 'checking' | 'available' | 'missing';
 
 const pdfDocs: Record<DocKey, { title: string; badge: string; path: string }> = {
   old: {
-    title: '1987 Constitution',
+    title: 'Current 2019 USC Constitution',
     badge: 'Reference Edition',
     path: '/docs/2019%20Amended-USC-Constitution-By-Laws.pdf',
   },
   new: {
-    title: 'Proposed Constitution',
+    title: 'Proposed 2026 USC Constitution',
     badge: 'Proposed Revision 2024.01',
     path: '/docs/NewConstitution.pdf',
   },
@@ -82,7 +82,7 @@ export default function Compare() {
                 <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-2">
                   {pdfDocs.old.badge}
                 </p>
-                <h2 className="font-display text-2xl md:text-3xl font-bold text-black">
+                <h2 className="font-display text-xl md:text-2xl font-bold text-black">
                   {pdfDocs.old.title}
                 </h2>
               </div>
@@ -146,7 +146,7 @@ export default function Compare() {
                 <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-2">
                   {pdfDocs.new.badge}
                 </p>
-                <h2 className="font-display text-2xl md:text-3xl font-bold text-black">
+                <h2 className="font-display text-xl md:text-2xl font-bold text-black">
                   {pdfDocs.new.title}
                 </h2>
               </div>

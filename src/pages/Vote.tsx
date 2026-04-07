@@ -135,9 +135,9 @@ export default function Vote() {
       {/* Minimal Top Bar */}
       <div className="h-10 flex items-center justify-center px-6 border-b border-zinc-100">
         <div className="flex items-center gap-2 font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-400">
-          <Link to="/" className="hover:text-black transition-colors">Archive</Link>
+          <Link to="/" className="hover:text-black transition-colors">Plebescite 2026</Link>
           <span>/</span>
-          <span className="text-zinc-600">Ballot 0422</span>
+          <span className="text-zinc-600">Ballot XXXX</span>
         </div>
       </div>
 
@@ -193,7 +193,7 @@ export default function Vote() {
                     Retain
                   </h3>
                   <p className="font-editorial text-sm text-zinc-600 leading-relaxed">
-                    Maintain the current 1987 protocols without amendment. Prioritizes historical continuity over structural expansion.
+                    Maintain the current 2019 USC Constitution without amendment. Prioritizes historical continuity over structural expansion.
                   </p>
                   {selected === 'old' && (
                     <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-black font-semibold mt-6 pt-4 border-t border-zinc-200">
@@ -221,7 +221,7 @@ export default function Vote() {
                     Adopt
                   </h3>
                   <p className="font-editorial text-sm text-zinc-600 leading-relaxed">
-                    Implement the 2024 Modernization Act. Introduces digital redundancy and climate-controlled preservation vaults.
+                    Implement the 2026 USC Constitution, Introduces digital redundancy and climate-controlled preservation vaults.
                   </p>
                   {selected === 'new' && (
                     <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-black font-semibold mt-6 pt-4 border-t border-zinc-200">
