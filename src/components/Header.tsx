@@ -7,15 +7,20 @@ type HeaderProps = {
   lastRefresh?: Date;
 };
 
-const navItems = [
-  { label: 'Compare', href: '/compare', activeOn: '/compare' },
-  { label: 'Vote', href: '/vote', activeOn: '/vote' },
-  { label: 'Analytics', href: '/admin', activeOn: '/admin' },
+const studentNavItems = [
+  { label: 'Proposed Constitution', href: '/compare', activeOn: '/compare' },
+  { label: 'Vote here', href: '/vote', activeOn: '/vote' },
+];
+
+const adminNavItems = [
+  { label: 'Dashboard', href: '/admin', activeOn: '/admin' },
 ];
 
 export default function Header({ showRefreshIndicator, lastRefresh }: HeaderProps) {
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
+
+  const navItems = isAdmin ? adminNavItems : studentNavItems;
 
   const formatRefresh = (date: Date) => {
     const mins = Math.round((Date.now() - date.getTime()) / 60000);
