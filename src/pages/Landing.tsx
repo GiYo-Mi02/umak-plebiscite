@@ -45,7 +45,7 @@ export default function Landing() {
           transition={{ duration: 0.7, delay: 0.25 }}
           className="font-editorial italic text-base md:text-lg text-zinc-600 max-w-lg mb-10 leading-relaxed"
         >
-         Isang makasaysayang hakbang sa pangunguna ng UMak University Student Council (USC) at ng lahat ng College Student Councils (CSC).
+         Isang makasaysayang hakbang sa pangunguna ng UMak University Student Congress, University Student Council (USC) at ng lahat ng College Student Councils (CSC).
         </motion.p>
 
         <motion.div
