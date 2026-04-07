@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import AuthCallback from './pages/AuthCallback';
 import Vote from './pages/Vote';
 import Admin from './pages/Admin';
+import AdminColleges from './pages/AdminColleges';
 
 const Compare = lazy(() => import('./pages/Compare'));
 
@@ -36,6 +37,7 @@ export default function App() {
           />
           <Route path="/vote" element={<Vote />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/colleges" element={<AdminColleges />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

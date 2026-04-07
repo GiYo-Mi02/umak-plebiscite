@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ShieldCheck, Lock, CheckCircle2 } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -18,7 +18,7 @@ type VoteStats = {
 
 export default function Admin() {
   const navigate = useNavigate();
-  const { user, loading: authLoading, isAdmin, signOut } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const [data, setData] = useState<VoteStats | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -93,7 +93,6 @@ export default function Admin() {
     { name: 'Adopt', votes: data.votes_new, fill: '#27272a' },
   ];
 
-  // Format large numbers for compact display
   const formatCompact = (n: number) => {
     if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
     return n.toLocaleString();
@@ -113,7 +112,7 @@ export default function Admin() {
         >
           <div>
             <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-2">
-              Executive Summary / 2024 General Session
+              Executive Summary / Plebiscite 2026
             </p>
             <h1 className="font-display text-4xl md:text-5xl font-bold text-black tracking-tight">
               Voting Data Analytics
@@ -121,9 +120,10 @@ export default function Admin() {
           </div>
           <button
             onClick={handleRefresh}
-            className="pill-button bg-black text-white hover:bg-zinc-800 self-start md:self-auto"
+            className="pill-button bg-black text-white hover:bg-zinc-800 self-start md:self-auto inline-flex items-center gap-2"
           >
-            {isRefreshing ? 'Refreshing...' : 'Export Report'}
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
           </button>
         </motion.div>
 
@@ -151,6 +151,23 @@ export default function Admin() {
             </div>
           </div>
 
+          {/* Registered Voters */}
+          <div className="bg-white rounded-xl p-6 md:p-8 card-shadow">
+            <p className="font-interface text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-4">
+              Registered Voters
+            </p>
+            <div className="flex items-end gap-3 mb-4">
+              <span className="font-display text-5xl md:text-6xl font-black text-black tracking-tight leading-none">
+                {formatCompact(data.total_voters)}
+              </span>
+            </div>
+            <div className="flex gap-1.5">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-[3px] w-5 bg-zinc-400 rounded-full" />
+              ))}
+            </div>
+          </div>
+
           {/* Turnout Rate */}
           <div className="bg-white rounded-xl p-6 md:p-8 card-shadow">
             <p className="font-interface text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-4">
@@ -161,36 +178,44 @@ export default function Admin() {
                 {participationRate}%
               </span>
               <span className="font-interface text-xs text-zinc-400 mb-2">
-                Target 80%
+                of registered
               </span>
             </div>
-            <div className="flex gap-1.5">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className={`h-[3px] w-3 rounded-full ${i < 4 ? 'bg-black' : 'bg-zinc-200'}`} />
-              ))}
+            {/* Progress bar showing participation */}
+            <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(Number(participationRate), 100)}%` }}
+                transition={{ duration: 1, delay: 0.5 }}
+                className="h-full bg-black rounded-full"
+              />
             </div>
           </div>
+        </motion.div>
 
-          {/* Verification Score */}
-          <div className="bg-white rounded-xl p-6 md:p-8 card-shadow">
-            <p className="font-interface text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-4">
-              Verification Score
-            </p>
-            <div className="flex items-end gap-3 mb-4">
-              <span className="font-display text-5xl md:text-6xl font-black text-black tracking-tight leading-none">
-                99.8
-              </span>
-              <span className="font-interface text-[10px] uppercase tracking-[0.15em] text-zinc-500 mb-2">
-                Secure
-              </span>
+        {/* College Registrations Link */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.22 }}
+          className="mb-8"
+        >
+          <Link
+            to="/admin/colleges"
+            className="flex items-center justify-between bg-white rounded-xl p-6 card-shadow hover:shadow-md transition-shadow group"
+          >
+            <div>
+              <p className="font-interface text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-1">
+                Voter Demographics
+              </p>
+              <h3 className="font-display text-lg font-bold text-black group-hover:text-zinc-700 transition-colors">
+                View College Registrations
+              </h3>
             </div>
-            <div className="flex items-center gap-2 mt-1">
-              <CheckCircle2 className="w-4 h-4 text-zinc-700" />
-              <span className="font-interface text-[10px] uppercase tracking-[0.15em] text-zinc-600">
-                Chain of Custody Validated
-              </span>
-            </div>
-          </div>
+            <span className="font-interface text-[10px] uppercase tracking-[0.18em] text-zinc-400 group-hover:text-black transition-colors">
+              →
+            </span>
+          </Link>
         </motion.div>
 
         {/* Charts Row */}
@@ -206,7 +231,7 @@ export default function Admin() {
               <div>
                 <h3 className="font-display text-xl font-bold text-black mb-1">Vote Distribution</h3>
                 <p className="font-interface text-[10px] uppercase tracking-[0.15em] text-zinc-400">
-                  Current Aggregate Data
+                  Live Aggregate Data
                 </p>
               </div>
               <div className="flex items-center gap-4">
@@ -252,31 +277,51 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* Secure Environment Card */}
+          {/* Summary Panel — real data only */}
           <div className="lg:col-span-2 bg-zinc-900 text-white rounded-xl p-6 md:p-8 flex flex-col justify-between">
             <div>
               <p className="font-interface text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-4">
-                Secure Environment
+                Plebiscite Overview
               </p>
-              <h3 className="font-display text-2xl md:text-3xl font-bold text-white leading-tight mb-4">
-                Digital Vault Integrity remains at 100%.
+              <h3 className="font-display text-2xl md:text-3xl font-bold text-white leading-tight mb-2">
+                {data.total_votes.toLocaleString()} ballots cast
               </h3>
               <p className="font-editorial text-sm text-zinc-400 leading-relaxed">
-                All incoming data is being encrypted and mirrored across three geographical archives in real-time.
+                out of {data.total_voters.toLocaleString()} registered voters. Turnout is currently at {participationRate}%.
               </p>
             </div>
-            <div className="mt-8 space-y-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span className="font-interface text-[10px] uppercase tracking-[0.15em] text-zinc-300">
-                  End-to-End Encryption
+            <div className="mt-8 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="font-interface text-[10px] uppercase tracking-[0.15em] text-zinc-400">
+                  Retain Votes
+                </span>
+                <span className="font-interface text-sm font-semibold text-white tabular-nums">
+                  {data.votes_old.toLocaleString()} ({retainPercent}%)
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span className="font-interface text-[10px] uppercase tracking-[0.15em] text-zinc-300">
-                  Block-Level Redundancy
+              <div className="h-1.5 w-full bg-zinc-700 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${retainPercent}%` }}
+                  transition={{ duration: 1, delay: 0.6 }}
+                  className="h-full bg-zinc-400 rounded-full"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-interface text-[10px] uppercase tracking-[0.15em] text-zinc-400">
+                  Adopt Votes
                 </span>
+                <span className="font-interface text-sm font-semibold text-white tabular-nums">
+                  {data.votes_new.toLocaleString()} ({adoptPercent}%)
+                </span>
+              </div>
+              <div className="h-1.5 w-full bg-zinc-700 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${adoptPercent}%` }}
+                  transition={{ duration: 1, delay: 0.7 }}
+                  className="h-full bg-white rounded-full"
+                />
               </div>
             </div>
           </div>
@@ -287,7 +332,7 @@ export default function Admin() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.45 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8"
+          className="grid grid-cols-1 md:grid-cols-2 gap-5"
         >
           {/* Retain Breakdown */}
           <div className="bg-white rounded-xl p-6 md:p-8 card-shadow">
@@ -332,38 +377,6 @@ export default function Admin() {
                 <span className="font-interface text-xs text-zinc-400">Share</span>
                 <span className="font-interface text-xs font-semibold text-zinc-600">{adoptPercent}%</span>
               </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* System Ledger */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.6 }}
-          className="bg-white rounded-xl p-6 md:p-8 card-shadow"
-        >
-          <h3 className="font-interface text-[10px] uppercase tracking-[0.18em] text-zinc-500 mb-6">
-            System Ledger
-          </h3>
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 text-sm">
-              <span className="font-mono text-xs text-zinc-400 w-12">
-                {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-              <span className="font-interface text-zinc-700">Backup sequence initiated</span>
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <span className="font-mono text-xs text-zinc-400 w-12">
-                {new Date(lastRefresh.getTime() - 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-              <span className="font-interface text-zinc-700">New administrator authorized</span>
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <span className="font-mono text-xs text-zinc-400 w-12">
-                {new Date(lastRefresh.getTime() - 7200000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-              <span className="font-interface text-zinc-700">Vault integrity verified — all nodes healthy</span>
             </div>
           </div>
         </motion.div>

@@ -5,6 +5,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
 import Footer from '@/components/Footer';
+import CollegeSelectionModal from '@/components/CollegeSelectionModal';
 
 type VoteChoice = 'old' | 'new';
 type VoteStep = 'loading' | 'vote' | 'confirm' | 'success' | 'already_voted' | 'error';
@@ -141,6 +142,7 @@ export default function Vote() {
       </div>
 
       <main className="flex-1 flex flex-col items-center px-6">
+        <CollegeSelectionModal />
         <AnimatePresence mode="wait">
           {/* ============ VOTE STEP ============ */}
           {step === 'vote' && (

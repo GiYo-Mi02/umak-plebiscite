@@ -154,7 +154,7 @@ export default function Login() {
           transition={{ duration: 0.8, delay: 0.5 }}
           className="border-t border-zinc-100 pt-6 text-center"
         >
-          <span className="font-display italic text-sm text-zinc-300 tracking-tight">ARCHIVE</span>
+          <span className="font-display italic text-sm text-zinc-300 tracking-tight">University of Makati</span>
         </motion.div>
       </motion.div>
 
